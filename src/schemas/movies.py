@@ -25,7 +25,7 @@ class BasicMovieModel(BaseModel):
 class CountrySchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    code: str = Field(min_length=2, max_length=3)
+    code: str = Field(pattern=r"^[A-Z]{3}$")
     name: str | None
 
 
@@ -58,7 +58,7 @@ class MovieDetailSchema(BasicMovieModel):
 
 class MovieCreateSchema(BasicMovieModel):
     model_config = ConfigDict(from_attributes=True)
-    country: str = Field(min_length=2, max_length=3)
+    country: str = Field(pattern=r"^[A-Z]{3}$")
     genres: list[str]
     actors: list[str]
     languages: list[str]

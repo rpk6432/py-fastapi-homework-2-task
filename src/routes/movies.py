@@ -149,7 +149,7 @@ async def create_movie(movie: MovieCreateSchema, db: AsyncSession = Depends(get_
         await db.refresh(
             movie_obj, attribute_names=["country", "genres", "actors", "languages"]
         )
-        return movie_obj
+        return MovieDetailSchema.model_validate(movie_obj)
     except IntegrityError:
         await db.rollback()
 
@@ -178,7 +178,9 @@ async def delete_movie(
 
 @router.patch("/{movie_id}/")
 async def update_movie(
-        movie_id: int, movie_data: MovieUpdateSchema, db: AsyncSession = Depends(get_db)
+        movie_data: MovieUpdateSchema,
+        movie_id: int = Path(ge=1, description="ID of the movie to update"),
+        db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(select(MovieModel).where(MovieModel.id == movie_id))
     movie = result.scalar_one_or_none()
@@ -197,14 +199,25 @@ async def update_movie(
             raise ValueError("Budget must be non-negative")
         if "revenue" in update_data and update_data["revenue"] < 0:
             raise ValueError("Revenue must be non-negative")
-    except ValueError as e:
+    except ValueError:
         raise HTTPException(
-            status_code=400, detail=str(e)
+            status_code=400, detail="Invalid input data."
         )
 
     for field, value in update_data.items():
         setattr(movie, field, value)
 
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"A movie with the name '{movie.name}' "
+                f"and release date '{movie.date}' already exists."
+            ),
+        )
 
     return {"detail": "Movie updated successfully."}

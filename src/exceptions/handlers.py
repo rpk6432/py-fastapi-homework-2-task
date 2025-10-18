@@ -11,7 +11,7 @@ def register_exception_handlers(app: FastAPI):
         if (
                 endpoint
                 and endpoint.__name__ == "update_movie"
-                and endpoint.__module__ == "routes.movies"
+                and endpoint.__module__.endswith("routes.movies")
         ):
             return JSONResponse(
                 status_code=400,
