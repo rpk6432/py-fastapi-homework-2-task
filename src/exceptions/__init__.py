@@ -1,0 +1,1 @@
+from exceptions.handlers import register_exception_handlers
