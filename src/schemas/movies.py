@@ -18,16 +18,14 @@ class BasicMovieModel(BaseModel):
     @classmethod
     def validate_date(cls, value: dt.date) -> dt.date:
         if value > dt.date.today() + dt.timedelta(days=365):
-            raise ValueError(
-                "Release date cannot be more than 1 year in the future"
-            )
+            raise ValueError
         return value
 
 
 class CountrySchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    code: str = Field(max_length=3)
+    code: str = Field(min_length=2, max_length=3)
     name: str | None
 
 
@@ -60,7 +58,7 @@ class MovieDetailSchema(BasicMovieModel):
 
 class MovieCreateSchema(BasicMovieModel):
     model_config = ConfigDict(from_attributes=True)
-    country: str
+    country: str = Field(min_length=2, max_length=3)
     genres: list[str]
     actors: list[str]
     languages: list[str]
@@ -96,9 +94,7 @@ class MovieUpdateSchema(BaseModel):
 
     @field_validator("date")
     @classmethod
-    def date_not_too_far(cls, value: dt.datetime | None) -> dt.datetime | None:
+    def validate_date(cls, value: dt.date | None) -> dt.date | None:
         if value and value > dt.date.today() + dt.timedelta(days=365):
-            raise ValueError(
-                "Release date cannot be more than 1 year in the future"
-            )
+            raise ValueError
         return value

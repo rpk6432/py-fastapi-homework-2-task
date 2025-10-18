@@ -121,7 +121,7 @@ async def create_movie(movie: MovieCreateSchema, db: AsyncSession = Depends(get_
             return instance
 
         country = await get_or_create(
-            CountryModel, code=movie.country, name=movie.country
+            CountryModel, code=movie.country, name=None
         )
         genres = [await get_or_create(GenreModel, name=genre) for genre in movie.genres]
         actors = [await get_or_create(ActorModel, name=actor) for actor in movie.actors]
@@ -129,7 +129,7 @@ async def create_movie(movie: MovieCreateSchema, db: AsyncSession = Depends(get_
             await get_or_create(LanguageModel, name=language)
             for language in movie.languages
         ]
-        movie = MovieModel(
+        movie_obj = MovieModel(
             name=movie.name,
             date=movie.date,
             score=movie.score,
@@ -139,17 +139,17 @@ async def create_movie(movie: MovieCreateSchema, db: AsyncSession = Depends(get_
             revenue=movie.revenue,
             country_id=country.id,
         )
-        movie.genres.extend(genres)
-        movie.actors.extend(actors)
-        movie.languages.extend(languages)
+        movie_obj.genres.extend(genres)
+        movie_obj.actors.extend(actors)
+        movie_obj.languages.extend(languages)
 
-        db.add(movie)
+        db.add(movie_obj)
         await db.commit()
-        await db.refresh(movie)
+        await db.refresh(movie_obj)
         await db.refresh(
-            movie, attribute_names=["country", "genres", "actors", "languages"]
+            movie_obj, attribute_names=["country", "genres", "actors", "languages"]
         )
-        return movie
+        return movie_obj
     except IntegrityError:
         await db.rollback()
 
@@ -197,9 +197,9 @@ async def update_movie(
             raise ValueError("Budget must be non-negative")
         if "revenue" in update_data and update_data["revenue"] < 0:
             raise ValueError("Revenue must be non-negative")
-    except Exception:
+    except ValueError as e:
         raise HTTPException(
-            status_code=404, detail="Invalid input data."
+            status_code=400, detail=str(e)
         )
 
     for field, value in update_data.items():
